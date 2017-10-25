@@ -3,7 +3,7 @@
   (:require [clojure.test :refer :all]
             [engineer.lisp.fast-atom.core :refer :all]))
 
-(defn perf-test
+(defn perf-test-1
   []
   (let [trials 100000000]
     (println "Standard atom swap!")
@@ -37,7 +37,89 @@
   ;; Return test value
   true)
 
-(deftest a-test
+(defmacro trial-body
+  [trials trial-num v init & body]
+  `(let [trials# ~trials]
+     (when (pos? trials#)
+       (let [~v ~init]
+         (loop [~trial-num 1]
+           ~@body
+           (when (< ~trial-num trials#)
+             (recur (inc ~trial-num))))))))
+
+(defmacro repeat-body
+  "num must be an actual number (for now)"
+  [sym num form]
+  (letfn [(makeform [n]
+            ;; This isn't recursive and only handles top-level replacements
+            (map #(if (= % sym) n %) form))]
+    (cons 'do
+          (map makeform (range 1 (inc num))))))
+
+(defmacro reset!m
+  [atom & body]
+  `(reset! ~atom ~body))
+
+(defn perf-test-2
+  []
+  (let [trials 1000000]
+    (println "Standard atom/map swap x10, trials: " trials)
+    (time
+      (trial-body trials num a (atom {})
+        (repeat-body n 10
+          (swap! a assoc ,,, n num))))
+
+    (println "Standard atom/transient map swap x10, trials: " trials)
+    (time
+      (trial-body trials num a (atom (transient {}))
+        (repeat-body n 10
+          (swap! a assoc! ,,, n num))))
+
+    (println "Unsynchronized atom/map swap x10, trials: " trials)
+    (time
+      (trial-body trials num a (UnsynchronizedAtom. {})
+        (repeat-body n 10
+          (swap! a assoc ,,, n num))))
+
+    (println "Unsynchronized atom/transient map swap x10, trials: " trials)
+    (time
+      (trial-body trials num a (UnsynchronizedAtom. (transient {}))
+        (repeat-body n 10
+          (swap! a assoc! ,,, n num))))
+
+    (println "Standard atom/map reset x10, trials: " trials)
+    (time
+      (trial-body trials num a (atom {})
+        (repeat-body n 10
+          (reset!m a assoc @a n num))))
+
+    (println "Standard atom/transient map reset x10, trials: " trials)
+    (time
+      (trial-body trials num a (atom (transient {}))
+        (repeat-body n 10
+          (reset!m a assoc! @a n num))))
+
+    (println "Unsynchronized atom/map reset x10, trials: " trials)
+    (time
+      (trial-body trials num a (UnsynchronizedAtom. {})
+        (repeat-body n 10
+          (reset!m a assoc @a n num))))
+
+    (println "Unsynchronized atom/transient map reset x10, trials: " trials)
+    (time
+      (trial-body trials num a (UnsynchronizedAtom. (transient {}))
+        (repeat-body n 10
+          (reset!m a assoc! @a n num))))
+
+  ) ; End of let
+  ;; "Test" succeeded
+  true)
+
+
+
+(deftest test-perf-1
   (testing "Performance"
-    (is (perf-test))
-    (is (perf-test))))
+    (println "\n\nTest 1 (Warm up the JVM)\n\n")
+    (is (perf-test-2))
+    (println "\n\nTest 2 (JVM warmed up)\n\n")
+    (is (perf-test-2))))
