@@ -1,4 +1,4 @@
-(ns fast-atom.core)
+(ns engineer.lisp.fast-atom.core)
 
 (defn foo
   "I don't do a whole lot."

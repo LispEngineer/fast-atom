@@ -1,6 +1,6 @@
-(ns fast-atom.core-test
+(ns engineer.lisp.fast-atom.core-test
   (:require [clojure.test :refer :all]
-            [fast-atom.core :refer :all]))
+            [engineer.lisp.fast-atom.core :refer :all]))
 
 (deftest a-test
   (testing "FIXME, I fail."
