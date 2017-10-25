@@ -28,6 +28,11 @@ import clojure.lang.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
+/** A class implementing the same interfaces as
+ * Clojure 1.8 Atom, but without any synchronization or memory barriers,
+ * to be used in imperative-style code inner loops, for example, on those
+ * rare occasions such things would be useful in Clojure.
+ */
 final public class UnsynchronizedAtom
         extends ARef
         implements IAtom {
@@ -73,6 +78,11 @@ final public class UnsynchronizedAtom
 
     /** Call ARef.validate which is clojure.lang package access only. */
     protected void callableValidate(Object val) {
+        // Don't waste time calling the reflected Method if there is no
+        // validator set.
+        if (validator == null) {
+            return;
+        }
         try {
             validateMethod.invoke(this, val);
         } catch (IllegalAccessException iae) {
@@ -82,7 +92,10 @@ final public class UnsynchronizedAtom
         }
     }
 
-    /** Swaps the UnsynchronizedAtom's state using the provided function to
+    //////////////////////////////////////////////////////////////////////////////
+    // IAtom Implementation
+
+    /** IAtom: Swaps the UnsynchronizedAtom's state using the provided function to
      * mutate it.
      * Never fails. Always validates and notifies watchers.
      * @param f modification function that takes the old state
@@ -97,7 +110,7 @@ final public class UnsynchronizedAtom
         return newv;
     }
 
-    /** Swaps the UnsynchronizedAtom's state using the provided function
+    /** IAtom: Swaps the UnsynchronizedAtom's state using the provided function
      * and arg to mutate it.
      * Never fails. Always validates and notifies watchers.
      * @param f modification function that takes the old state
@@ -112,7 +125,7 @@ final public class UnsynchronizedAtom
         return newv;
     }
 
-    /** Swaps the UnsynchronizedAtom's state using the provided function
+    /** IAtom: Swaps the UnsynchronizedAtom's state using the provided function
      * and args to mutate it.
      * Never fails. Always validates and notifies watchers.
      * @param f modification function that takes the old state
@@ -127,7 +140,7 @@ final public class UnsynchronizedAtom
         return newv;
     }
 
-    /** Swaps the UnsynchronizedAtom's state using the provided function
+    /** IAtom: Swaps the UnsynchronizedAtom's state using the provided function
      * and args to mutate it.
      * Never fails. Always validates and notifies watchers.
      * @param f modification function that takes the old state
@@ -142,7 +155,7 @@ final public class UnsynchronizedAtom
         return newv;
     }
 
-    /** Sets the UnsynchronizedAtom's state as long as the state
+    /** IAtom: Sets the UnsynchronizedAtom's state as long as the state
      * is as provided.
      * Always validates new state. Notifies watchers if set.
      * <br/>
@@ -162,7 +175,7 @@ final public class UnsynchronizedAtom
         return set;
     }
 
-    /** Sets the UnsynchronizedAtom's state unconditionally.
+    /** IAtom: Sets the UnsynchronizedAtom's state unconditionally.
      * Always validates new state. Notifies watchers.
      * @param newState The new state
      * @return the new state
