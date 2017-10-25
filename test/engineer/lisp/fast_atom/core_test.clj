@@ -1,5 +1,5 @@
 (ns engineer.lisp.fast-atom.core-test
-  (:import (engineer.lisp.fastatom UnsynchronizedAtom))
+  (:import (engineer.lisp.fastatom UnsynchronizedAtom FastAtom))
   (:require [clojure.test :refer :all]
             [engineer.lisp.fast-atom.core :refer :all]))
 
@@ -62,56 +62,93 @@
 
 (defn perf-test-2
   []
-  (let [trials 1000000]
+  (let [trials 10000000]
+    (System/gc)
     (println "Standard atom/map swap x10, trials: " trials)
     (time
       (trial-body trials num a (atom {})
         (repeat-body n 10
           (swap! a assoc ,,, n num))))
 
+    (System/gc)
     (println "Standard atom/transient map swap x10, trials: " trials)
     (time
       (trial-body trials num a (atom (transient {}))
         (repeat-body n 10
           (swap! a assoc! ,,, n num))))
 
+    (System/gc)
     (println "Unsynchronized atom/map swap x10, trials: " trials)
     (time
       (trial-body trials num a (UnsynchronizedAtom. {})
         (repeat-body n 10
           (swap! a assoc ,,, n num))))
 
+    (System/gc)
     (println "Unsynchronized atom/transient map swap x10, trials: " trials)
     (time
       (trial-body trials num a (UnsynchronizedAtom. (transient {}))
         (repeat-body n 10
           (swap! a assoc! ,,, n num))))
 
+    (System/gc)
+    (println "Fast atom/map swap x10, trials: " trials)
+    (time
+      (trial-body trials num a (FastAtom. {})
+        (repeat-body n 10
+          (swap! a assoc ,,, n num))))
+
+    (System/gc)
+    (println "Fast atom/transient map swap x10, trials: " trials)
+    (time
+      (trial-body trials num a (FastAtom. (transient {}))
+        (repeat-body n 10
+          (swap! a assoc! ,,, n num))))
+
+    (println)
+    (System/gc)
     (println "Standard atom/map reset x10, trials: " trials)
     (time
       (trial-body trials num a (atom {})
         (repeat-body n 10
           (reset!m a assoc @a n num))))
 
+    (System/gc)
     (println "Standard atom/transient map reset x10, trials: " trials)
     (time
       (trial-body trials num a (atom (transient {}))
         (repeat-body n 10
           (reset!m a assoc! @a n num))))
 
+    (System/gc)
     (println "Unsynchronized atom/map reset x10, trials: " trials)
     (time
       (trial-body trials num a (UnsynchronizedAtom. {})
         (repeat-body n 10
           (reset!m a assoc @a n num))))
 
+    (System/gc)
     (println "Unsynchronized atom/transient map reset x10, trials: " trials)
     (time
       (trial-body trials num a (UnsynchronizedAtom. (transient {}))
         (repeat-body n 10
           (reset!m a assoc! @a n num))))
 
-  ) ; End of let
+    (System/gc)
+    (println "Fast atom/map reset x10, trials: " trials)
+    (time
+      (trial-body trials num a (FastAtom. {})
+        (repeat-body n 10
+          (reset!m a assoc @a n num))))
+
+    (System/gc)
+    (println "Fast atom/transient map reset x10, trials: " trials)
+    (time
+      (trial-body trials num a (FastAtom. (transient {}))
+        (repeat-body n 10
+          (reset!m a assoc! @a n num))))
+
+    ) ; End of let
   ;; "Test" succeeded
   true)
 

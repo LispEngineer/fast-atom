@@ -6,6 +6,7 @@
   :source-paths      ["src"]
   :java-source-paths ["java"]
   :javac-options     ["-target" "1.8" "-source" "1.8"]
+  :jvm-opts          ["-Xmx4g" "-Xms4g" "-Xmn2g" "-server"]
 
   ;; :main engineer.lisp.fast-atom.core
 
