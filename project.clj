@@ -2,4 +2,10 @@
   :description "fast-atom: A fast, unsynchronized atom for Clojure"
   :url "https://symbolics.lisp.engineer/"
   :license {:name "Copyright 2017 Douglas P. Fields, Jr. All Rights Reserved."}
-  :dependencies [[org.clojure/clojure "1.8.0"]])
+
+  :source-paths      ["src"]
+  :java-source-paths ["java"]
+  :javac-options     ["-target" "1.8" "-source" "1.8"]
+
+  :dependencies [[org.clojure/clojure "1.8.0"]]
+)
