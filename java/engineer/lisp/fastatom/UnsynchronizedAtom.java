@@ -1,13 +1,3 @@
-/**
- *   Copyright (c) Rich Hickey. All rights reserved.
- *   The use and distribution terms for this software are covered by the
- *   Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
- *   which can be found in the file epl-v10.html at the root of this distribution.
- *   By using this software in any fashion, you are agreeing to be bound by
- * 	 the terms of this license.
- *   You must not remove this notice, or any other, from this software.
- **/
-
 /*
  * Copyright © 2017 Douglas P. Fields, Jr. All Rights Reserved.
  * Web: https://symbolics.lisp.engineer/
@@ -15,7 +5,7 @@
  * Twitter: @LispEngineer
  *
  * Fast "atom"-like data structure for Clojure, based upon the
- * Clojure 1.8 Atom. This may need to be revised to work with
+ * Clojure 1.8 Atom by Rich Hickey. This may need to be revised to work with
  * Clojure 1.9 which has a new IAtom2 interface.
  *
  * October 24, 2017
@@ -46,7 +36,7 @@ final public class UnsynchronizedAtom
     static {
         Method vm = null;
         try {
-            vm = UnsynchronizedAtom.class.getDeclaredMethod("validate", Object.class);
+            vm = UnsynchronizedAtom.class.getSuperclass().getDeclaredMethod("validate", Object.class);
         } catch (NoSuchMethodException nsme) {
             nsme.printStackTrace();
         }
@@ -78,11 +68,6 @@ final public class UnsynchronizedAtom
 
     /** Call ARef.validate which is clojure.lang package access only. */
     protected void callableValidate(Object val) {
-        // Don't waste time calling the reflected Method if there is no
-        // validator set.
-        if (validator == null) {
-            return;
-        }
         try {
             validateMethod.invoke(this, val);
         } catch (IllegalAccessException iae) {
@@ -104,7 +89,7 @@ final public class UnsynchronizedAtom
     public Object swap(IFn f) {
         Object v = state;
         Object newv = f.invoke(v);
-        callableValidate(newv);
+        if (validator != null) { callableValidate(newv); }
         state = newv;
         notifyWatches(v, newv);
         return newv;
@@ -119,7 +104,7 @@ final public class UnsynchronizedAtom
     public Object swap(IFn f, Object arg) {
         Object v = state;
         Object newv = f.invoke(v, arg);
-        callableValidate(newv);
+        if (validator != null) { callableValidate(newv); }
         state = newv;
         notifyWatches(v, newv);
         return newv;
@@ -134,7 +119,7 @@ final public class UnsynchronizedAtom
     public Object swap(IFn f, Object arg1, Object arg2) {
         Object v = state;
         Object newv = f.invoke(v, arg1, arg2);
-        callableValidate(newv);
+        if (validator != null) { callableValidate(newv); }
         state = newv;
         notifyWatches(v, newv);
         return newv;
@@ -149,7 +134,7 @@ final public class UnsynchronizedAtom
     public Object swap(IFn f, Object x, Object y, ISeq args) {
         Object v = state;
         Object newv = f.applyTo(RT.listStar(v, x, y, args));
-        callableValidate(newv);
+        if (validator != null) { callableValidate(newv); }
         state = newv;
         notifyWatches(v, newv);
         return newv;
@@ -165,7 +150,7 @@ final public class UnsynchronizedAtom
      * @return true if we set the state
      */
     public boolean compareAndSet(Object oldState, Object newState) {
-        callableValidate(newState);
+        if (validator != null) { callableValidate(newState); }
         boolean set = false;
         if (state == oldState) {
             state = newState;
@@ -182,7 +167,7 @@ final public class UnsynchronizedAtom
      */
     public Object reset(Object newState) {
         Object oldval = state;
-        callableValidate(newState);
+        if (validator != null) { callableValidate(newState); }
         state = newState;
         notifyWatches(oldval, newState);
         return newState;
