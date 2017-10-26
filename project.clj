@@ -6,7 +6,13 @@
   :source-paths      ["src"]
   :java-source-paths ["java"]
   :javac-options     ["-target" "1.8" "-source" "1.8"]
-  :jvm-opts          ["-Xmx4g" "-Xms4g" "-Xmn2g" "-server"]
+  :jvm-opts          ["-Xmx8g" "-Xms8g" "-Xmn7g" ; Memory
+                      "-server"
+                      #_"-Xcomp" ; Force JIT compilation at the start; harms performance due to no JIT optimization
+                      ;; Watch what's going on in the GC - Clojure makes a metric ton of garbage in the young gen
+                      ;; due to immutable data structures
+                      #_"-XX:+PrintGCDetails" #_"-verbose:gc"
+                     ]
 
   ;; :main engineer.lisp.fast-atom.core
 

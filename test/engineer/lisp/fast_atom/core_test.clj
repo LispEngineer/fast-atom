@@ -12,6 +12,9 @@
   (:require [clojure.test :refer :all]
             [engineer.lisp.fast-atom.core :refer :all]))
 
+(set! *warn-on-reflection* true)
+(set! *unchecked-math* :warn-on-boxed)
+
 (defn perf-test-1
   []
   (let [trials 100000000]
@@ -49,10 +52,10 @@
 (defmacro trial-body
   "Makes the body of a performance trial function, looping it trials times."
   [trials trial-num v init & body]
-  `(let [trials# ~trials]
+  `(let [trials# (long ~trials)] ; long: forces not using boxed math
      (when (pos? trials#)
        (let [~v ~init]
-         (loop [~trial-num 1]
+         (loop [~trial-num (long 1)] ; long: forces not using boxed math
            ~@body
            (when (< ~trial-num trials#)
              (recur (inc ~trial-num))))))))
@@ -157,6 +160,9 @@
   (reset!m a assoc! @a n num)
   a n num)
 
+(defn blank-line [& body]
+  (println))
+
 
 
 (defn perf-test-2
@@ -166,9 +172,13 @@
         funcs [#'std-map-swap     #'std-trans-swap
                #'unsync-map-swap  #'unsync-trans-swap
                #'fast-map-swap    #'fast-trans-swap
+               #'blank-line
                #'std-map-reset    #'std-trans-reset
                #'unsync-map-reset #'unsync-trans-reset
                #'fast-map-reset   #'fast-trans-reset]]
+    ;; Warm up the first one once
+    (std-map-swap (long (/ trials 4)))
+    (println "\nReal trials starting...\n")
     (doseq [f funcs]
       (System/gc)
       (f trials)))
