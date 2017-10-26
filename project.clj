@@ -1,5 +1,5 @@
-(defproject engineer.lisp/fast-atom "0.1.1-SNAPSHOT"
-  :description "fast-atom: A fast, unsynchronized atom for Clojure"
+(defproject engineer.lisp/fast-atom "0.2.0-SNAPSHOT"
+  :description "fast-atom: Alternative atoms library for Clojure"
   :url "https://symbolics.lisp.engineer/"
   :license {:name "Copyright 2017 Douglas P. Fields, Jr. All Rights Reserved."}
 

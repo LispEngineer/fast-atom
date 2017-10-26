@@ -1,3 +1,12 @@
+;; Copyright © 2017 Douglas P. Fields, Jr. All Rights Reserved.
+;; Web: https://symbolics.lisp.engineer/
+;; E-mail: symbolics@lisp.engineer
+;; Twitter: @LispEngineer
+
+;; Sorry that this is really ugly. I was iterating super fast and wanted
+;; to get some efficient performance test functions without too much
+;; overhead, so lots of macros.
+
 (ns engineer.lisp.fast-atom.core-test
   (:import (engineer.lisp.fastatom UnsynchronizedAtom FastAtom))
   (:require [clojure.test :refer :all]
@@ -38,6 +47,7 @@
   true)
 
 (defmacro trial-body
+  "Makes the body of a performance trial function, looping it trials times."
   [trials trial-num v init & body]
   `(let [trials# ~trials]
      (when (pos? trials#)
@@ -48,7 +58,9 @@
              (recur (inc ~trial-num))))))))
 
 (defmacro repeat-body
-  "num must be an actual number (for now)"
+  "Repeats the form num times assigning the repeat to specified sym each time.
+   Basically, unrolls something.
+   num must be an actual number (for now)"
   [sym num form]
   (letfn [(makeform [n]
             ;; This isn't recursive and only handles top-level replacements
@@ -57,112 +69,106 @@
           (map makeform (range 1 (inc num))))))
 
 (defmacro reset!m
+  "Since repeat-body doesn't handle nested forms, this just
+   wraps reset! with a flattened body after the atom."
   [atom & body]
   `(reset! ~atom ~body))
 
 (defmacro make-perf-func
-  [name desc create body a n num]
+  "Creates a performance function with a given atom creator and
+   atom contents updator."
+  [name desc create body
+   a n num] ; These are necessary symbols
   `(defn ~name [trials#]
      (println ~desc " x" 10 ", trials: " trials#)
      (time
        (trial-body trials# ~num ~a ~create
          (repeat-body ~n 10 ~body)))))
 
-(defn std-map-swap
-  [trials]
-  (println "Standard atom/map swap x10, trials: " trials)
-  (time
-    (trial-body trials num a (atom {})
-      (repeat-body n 10
-        (swap! a assoc ,,, n num)))))
+(make-perf-func std-map-swap
+  "Std atom/map swap"
+  (atom {})
+  (swap! a assoc,,, n num)
+  a n num)
 
-(defn std-trans-swap
-  [trials]
-  (println "Standard atom/transient map swap x10, trials: " trials)
-  (time
-    (trial-body trials num a (atom (transient {}))
-      (repeat-body n 10
-        (swap! a assoc! ,,, n num)))))
+(make-perf-func std-trans-swap
+  "Std atom/transient swap"
+  (atom (transient {}))
+  (swap! a assoc!,,, n num)
+  a n num)
 
-(defn unsync-map-swap
-  [trials]
-  (println "Unsynchronized atom/map swap x10, trials: " trials)
-  (time
-    (trial-body trials num a (UnsynchronizedAtom. {})
-      (repeat-body n 10
-        (swap! a assoc ,,, n num)))))
+(make-perf-func unsync-map-swap
+  "Unsync atom/map swap"
+  (UnsynchronizedAtom. {})
+  (swap! a assoc,,, n num)
+  a n num)
 
-(defn unsync-trans-swap
-  [trials]
-  (println "Unsynchronized atom/transient map swap x10, trials: " trials)
-  (time
-    (trial-body trials num a (UnsynchronizedAtom. (transient {}))
-      (repeat-body n 10
-        (swap! a assoc! ,,, n num)))))
+(make-perf-func unsync-trans-swap
+  "Unsync atom/transient swap"
+  (UnsynchronizedAtom. (transient {}))
+  (swap! a assoc!,,, n num)
+  a n num)
 
 (make-perf-func fast-map-swap
-                "Fast atom/map swap"
-                (FastAtom. {})
-                (swap! a assoc ,,, n num)
-                a n num)
+  "Fast atom/map swap"
+  (FastAtom. {})
+  (swap! a assoc,,, n num)
+  a n num)
 
 (make-perf-func fast-trans-swap
-                "Fast atom/transient swap"
-                (FastAtom. (transient {}))
-                (swap! a assoc! ,,, n num)
-                a n num)
+  "Fast atom/transient swap"
+  (FastAtom. (transient {}))
+  (swap! a assoc!,,, n num)
+  a n num)
 
-    ;(println)
-    ;(System/gc)
-    ;(println "Standard atom/map reset x10, trials: " trials)
-    ;(time
-    ;  (trial-body trials num a (atom {})
-    ;    (repeat-body n 10
-    ;      (reset!m a assoc @a n num))))
-    ;
-    ;(System/gc)
-    ;(println "Standard atom/transient map reset x10, trials: " trials)
-    ;(time
-    ;  (trial-body trials num a (atom (transient {}))
-    ;    (repeat-body n 10
-    ;      (reset!m a assoc! @a n num))))
-    ;
-    ;(System/gc)
-    ;(println "Unsynchronized atom/map reset x10, trials: " trials)
-    ;(time
-    ;  (trial-body trials num a (UnsynchronizedAtom. {})
-    ;    (repeat-body n 10
-    ;      (reset!m a assoc @a n num))))
-    ;
-    ;(System/gc)
-    ;(println "Unsynchronized atom/transient map reset x10, trials: " trials)
-    ;(time
-    ;  (trial-body trials num a (UnsynchronizedAtom. (transient {}))
-    ;    (repeat-body n 10
-    ;      (reset!m a assoc! @a n num))))
-    ;
-    ;(System/gc)
-    ;(println "Fast atom/map reset x10, trials: " trials)
-    ;(time
-    ;  (trial-body trials num a (FastAtom. {})
-    ;    (repeat-body n 10
-    ;      (reset!m a assoc @a n num))))
-    ;
-    ;(System/gc)
-    ;(println "Fast atom/transient map reset x10, trials: " trials)
-    ;(time
-    ;  (trial-body trials num a (FastAtom. (transient {}))
-    ;    (repeat-body n 10
-    ;      (reset!m a assoc! @a n num))))
-    ;
-    ;) ; End of let
+(make-perf-func std-map-reset
+  "Std atom/map reset"
+  (atom {})
+  (reset!m a assoc @a n num)
+  a n num)
+
+(make-perf-func std-trans-reset
+  "Std atom/transient reset"
+  (atom (transient {}))
+  (reset!m a assoc! @a n num)
+  a n num)
+
+(make-perf-func unsync-map-reset
+  "Unsync atom/map reset"
+  (UnsynchronizedAtom. {})
+  (reset!m a assoc @a n num)
+  a n num)
+
+(make-perf-func unsync-trans-reset
+  "Unsync atom/transient reset"
+  (UnsynchronizedAtom. (transient {}))
+  (reset!m a assoc! @a n num)
+  a n num)
+
+(make-perf-func fast-map-reset
+  "Fast atom/map reset"
+  (FastAtom. {})
+  (reset!m a assoc @a n num)
+  a n num)
+
+(make-perf-func fast-trans-reset
+  "Fast atom/transient reset"
+  (FastAtom. (transient {}))
+  (reset!m a assoc! @a n num)
+  a n num)
+
+
 
 (defn perf-test-2
+  "Run all the individual performance test functions."
   []
-  (let [trials 1000000
-        funcs [#'std-map-swap    #'std-trans-swap
-               #'unsync-map-swap #'unsync-trans-swap
-               #'fast-map-swap   #'fast-trans-swap]]
+  (let [trials 10000000
+        funcs [#'std-map-swap     #'std-trans-swap
+               #'unsync-map-swap  #'unsync-trans-swap
+               #'fast-map-swap    #'fast-trans-swap
+               #'std-map-reset    #'std-trans-reset
+               #'unsync-map-reset #'unsync-trans-reset
+               #'fast-map-reset   #'fast-trans-reset]]
     (doseq [f funcs]
       (System/gc)
       (f trials)))
