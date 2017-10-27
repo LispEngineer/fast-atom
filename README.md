@@ -4,6 +4,14 @@ A Clojure library designed to act exactly like an `atom` but without
 any thread-safety or other atomicity. Hopefully this could be used for fast,
 mutable data in inner loops or imperative sections of code.
 
+WORK IN PROGRESS:
+Additionally, a `stable-transient` is provided, which is an enhancement of
+standard Clojure `transient` which makes the various mutating functions
+make an in-place modification of the transient. Hence, there is no need
+to wrap `stable-transient`s in `atom`s. They have all the key drawbacks
+of `transient`s, including not being equal, not being able to get their
+keys, being single-threaded, etc.
+
 This is currently targeting the Clojure 1.8 `Atom`. The Clojure 1.9 `Atom` has
 different semantics as it implements a different interface (`IAtom2`) which
 all return both the old and new values of the atom.
@@ -15,10 +23,19 @@ The two classes provided are:
   `validate()` function in its superclass.
 * `FastAtom` which has no validation or watcher support, and also abandons
   `AtomicReference`. It's an absolutely minimal implementation of `Atom`.
+  
+Clojure 1.7 also provides `volatile`. Perhaps that is good enough. I could
+always create a version of that which omits the `volatile` Java keyword
+for total thread-non-safety, of course. The performance of this over Atom
+is swamped by exactly how functions are invoked in Clojure, though, so
+maybe this is enough and I should just drop the whole investigation.
+See [this comment](https://groups.google.com/d/msg/clojure/QTzG8Ze6wuc/g9Tj4lDeSocJ)
+for instance.
 
 # Usage
 
-`lein test`
+* `lein test`
+* `lein test :only engineer.lisp.stable-transient.core-test`
 
 # Notes
 
@@ -55,6 +72,12 @@ Interestingly, the `swap!` forms are vastly more efficient than the
   value form of the `reset!` slows things down compared to the
   `swap!` which invokes the IFn directly without an extra `deref`
   (`@`) call. Needs to be profiled.
+  
+  
+# TODO
+
+* Use [criterium](https://github.com/hugoduncan/criterium) instead of `time`
+* Benchmark/test `volatile`
 
 
 # Suggestions

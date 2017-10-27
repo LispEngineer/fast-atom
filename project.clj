@@ -1,4 +1,4 @@
-(defproject engineer.lisp/fast-atom "0.2.0-SNAPSHOT"
+(defproject engineer.lisp/fast-atom "0.3.0-SNAPSHOT"
   :description "fast-atom: Alternative atoms library for Clojure"
   :url "https://symbolics.lisp.engineer/"
   :license {:name "Copyright 2017 Douglas P. Fields, Jr. All Rights Reserved."}
@@ -16,5 +16,8 @@
 
   ;; :main engineer.lisp.fast-atom.core
 
-  :dependencies [[org.clojure/clojure "1.8.0"]]
+  :dependencies [[org.clojure/clojure "1.8.0"]
+
+                 ;; Use to get all interfaces for proxying
+                 [org.apache.commons/commons-lang3 "3.6"]]
 )
